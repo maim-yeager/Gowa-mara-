@@ -41,22 +41,40 @@ const AppContent: React.FC = () => {
 
   // Route Dispatcher
   const renderRoute = () => {
+    // Admin Login direct route
+    if (currentPath === '/admin/login') {
+      return <LoginPage initialAdminMode={true} />;
+    }
+
     // Admin Routes Guard
     if (currentPath.startsWith('/admin')) {
       if (!isLoading && !isAdmin) {
         return (
           <div className="min-h-screen flex items-center justify-center p-4 bg-[#070a13] text-center">
-            <div className="glass-card max-w-md w-full p-8 rounded-3xl border border-white/10 space-y-4">
-              <h2 className="text-lg font-bold text-rose-400">Admin Authorization Required</h2>
+            <div className="glass-card max-w-md w-full p-8 rounded-3xl border border-white/10 space-y-5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-bold text-white">Admin Authorization Required</h2>
               <p className="text-xs text-slate-400">
-                You must be logged in as an authorized administrator to access the Gowa Mara Admin Console.
+                You must be authenticated as the authorized administrator (<span className="text-amber-400 font-mono font-semibold">mdmaim.69@gmail.com</span>) to access the Gowa Mara Admin Console.
               </p>
-              <button
-                onClick={() => navigate('/login')}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-500"
-              >
-                Sign In to Admin
-              </button>
+              <div className="pt-2 flex flex-col gap-2.5">
+                <button
+                  onClick={() => navigate('/admin/login')}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 transition-colors shadow-lg"
+                >
+                  Log In to Admin Portal
+                </button>
+                <button
+                  onClick={() => navigate('/home')}
+                  className="w-full py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/5 transition-colors"
+                >
+                  Return to Home Feed
+                </button>
+              </div>
             </div>
           </div>
         );

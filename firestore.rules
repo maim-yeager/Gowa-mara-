@@ -28,7 +28,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.email == 'mdmaim.69@gmail.com' && request.auth.token.email_verified == true)
+        (request.auth.token.email == 'mdmaim.69@gmail.com')
       );
     }
 
@@ -47,15 +47,18 @@ service cloud.firestore {
       allow list: if isSignedIn();
 
       // Normal users create initial pending profile with role 'user' and status 'pending'
+      // Bootstrapped admin email (mdmaim.69@gmail.com) can create approved admin profile
       allow create: if isSignedIn() && request.auth.uid == userId &&
         incoming().keys().hasAll(['uid', 'email', 'username', 'status', 'role']) &&
         incoming().uid == request.auth.uid &&
         incoming().email is string && incoming().email.size() <= 256 &&
         incoming().username is string && incoming().username.size() >= 3 && incoming().username.size() <= 50 &&
-        incoming().role == 'user' &&
-        incoming().status == 'pending';
+        (
+          (request.auth.token.email == 'mdmaim.69@gmail.com' && incoming().role == 'admin' && incoming().status == 'approved') ||
+          (incoming().role == 'user' && incoming().status == 'pending')
+        );
 
-      // Self-update allowed fields only (never allow user to change status or role)
+      // Self-update allowed fields only (never allow user to change status or role unless admin)
       allow update: if (
         isAdmin() || (
           isSignedIn() && request.auth.uid == userId &&
@@ -72,7 +75,7 @@ service cloud.firestore {
     // ADMINS REGISTRY
     match /admins/{adminId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (isSignedIn() && request.auth.token.email == 'mdmaim.69@gmail.com');
     }
 
     // POSTS

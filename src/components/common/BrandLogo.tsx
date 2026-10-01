@@ -18,30 +18,30 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const sizeMap = {
     sm: {
       icon: 'w-7 h-7',
-      textSize: 'text-lg',
+      textSize: 'text-2xl',
       subSize: 'text-[9px]',
       gap: 'gap-2',
       gLetter: 'text-sm font-black'
     },
     md: {
-      icon: 'w-9 h-9',
-      textSize: 'text-2xl',
+      icon: 'w-8 h-8',
+      textSize: 'text-3xl',
       subSize: 'text-[10px]',
       gap: 'gap-2.5',
       gLetter: 'text-base font-black'
     },
     lg: {
-      icon: 'w-14 h-14',
-      textSize: 'text-4xl',
+      icon: 'w-12 h-12',
+      textSize: 'text-5xl',
       subSize: 'text-xs',
-      gap: 'gap-3.5',
+      gap: 'gap-3',
       gLetter: 'text-2xl font-black'
     },
     xl: {
-      icon: 'w-20 h-20',
-      textSize: 'text-5xl sm:text-6xl',
+      icon: 'w-16 h-16',
+      textSize: 'text-6xl sm:text-7xl',
       subSize: 'text-sm',
-      gap: 'gap-4',
+      gap: 'gap-3.5',
       gLetter: 'text-3xl font-black'
     }
   };
@@ -53,7 +53,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       onClick={onClick}
       className={`inline-flex items-center ${s.gap} select-none cursor-pointer group transition-transform duration-200 active:scale-95 ${className}`}
     >
-      {/* Custom Geometric Rounded "G" Symbol */}
+      {/* Visual Monogram/Symbol */}
       <div className={`relative ${s.icon} flex-shrink-0 flex items-center justify-center`}>
         {/* Soft atmospheric ambient glow */}
         <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 via-pink-500 to-cyan-400 rounded-full blur-md opacity-70 group-hover:opacity-100 transition-opacity" />
@@ -97,20 +97,19 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         </div>
       </div>
 
-      {/* Typography: "G" + "owa Mara" Wordmark */}
+      {/* Website Logo: Stylish Calligraphy Font */}
       {!iconOnly && (
         <div className="flex flex-col">
-          <div className="flex items-baseline tracking-tight">
-            <span className={`font-extrabold ${s.textSize} bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-300 text-transparent bg-clip-text`}>
-              G
-            </span>
-            <span className={`font-bold ${s.textSize} text-white tracking-tight ml-[1px]`}>
-              owa Mara
+          <div className="flex items-baseline">
+            <span
+              className={`font-brand ${s.textSize} leading-none tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-200 to-amber-200 drop-shadow-[0_2px_8px_rgba(236,72,153,0.35)] select-none hover:brightness-110 transition-all`}
+            >
+              Gowa Mara
             </span>
           </div>
 
           {showSubtitle && (
-            <span className={`font-semibold tracking-[0.25em] uppercase text-slate-400 ${s.subSize} -mt-0.5`}>
+            <span className={`font-semibold tracking-[0.25em] uppercase text-slate-400 ${s.subSize} mt-0.5`}>
               Social Image Space
             </span>
           )}

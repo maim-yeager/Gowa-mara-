@@ -20,6 +20,10 @@ export const APP_CONFIG = {
   gmailUrl: "mailto:mdmaim.69@gmail.com",
   adminEmail: "mdmaim.69@gmail.com",
 
+  // Production Domain & URL
+  productionDomain: "gowa-mara-web.vercel.app",
+  productionUrl: "https://gowa-mara-web.vercel.app",
+
   // Upload limits & formats
   maxUploadSizeBytes: 10 * 1024 * 1024, // 10MB
   allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],

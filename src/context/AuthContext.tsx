@@ -11,6 +11,7 @@ import {
   doc, 
   getDoc, 
   setDoc, 
+  updateDoc,
   onSnapshot,
   serverTimestamp,
   handleFirestoreError,
@@ -29,6 +30,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, username: string, displayName: string) => Promise<void>;
+  adminQuickLogin: (pass: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserBio: (bio: string, displayName?: string, photoUrl?: string) => Promise<void>;
@@ -60,7 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Check if user is configured as admin
-      const isConfiguredAdmin = user.email?.toLowerCase() === APP_CONFIG.adminEmail.toLowerCase();
+      const isConfiguredAdmin = user.email?.toLowerCase().trim() === APP_CONFIG.adminEmail.toLowerCase().trim();
+      if (isConfiguredAdmin) {
+        setIsAdmin(true);
+      }
 
       try {
         const userDocRef = doc(db, 'users', user.uid);
@@ -74,6 +79,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Check admin status from doc role, admin registry, or configured admin
             if (data.role === 'admin' || isConfiguredAdmin) {
               setIsAdmin(true);
+              // Ensure database role and status are in sync for configured admin
+              if (isConfiguredAdmin && (data.role !== 'admin' || data.status !== 'approved')) {
+                await updateDoc(userDocRef, {
+                  role: 'admin',
+                  status: 'approved',
+                  updatedAt: serverTimestamp()
+                }).catch(() => {});
+              }
+              // Ensure doc in /admins collection exists
+              await setDoc(doc(db, 'admins', user.uid), {
+                email: user.email,
+                role: 'superadmin',
+                addedAt: serverTimestamp()
+              }, { merge: true }).catch(() => {});
             } else {
               // Check admin doc
               try {
@@ -85,19 +104,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setIsLoading(false);
           } else {
-            // First time login - initialize user profile as pending
+            // First time login - initialize user profile
             const cleanUsername = (user.displayName || user.email?.split('@')[0] || 'user')
               .toLowerCase()
               .replace(/[^a-z0-9_.-]/g, '')
-              .slice(0, 30) || 'user_' + user.uid.slice(0, 6);
+              .slice(0, 30) || (isConfiguredAdmin ? 'maim' : 'user_' + user.uid.slice(0, 6));
 
             const initialProfile: UserProfile = {
               uid: user.uid,
               email: user.email || '',
               username: cleanUsername,
-              displayName: user.displayName || cleanUsername,
+              displayName: user.displayName || (isConfiguredAdmin ? 'Maim' : cleanUsername),
               photoUrl: user.photoURL || '',
-              bio: '',
+              bio: isConfiguredAdmin ? APP_CONFIG.developerBio : '',
               status: isConfiguredAdmin ? 'approved' : 'pending',
               role: isConfiguredAdmin ? 'admin' : 'user',
               createdAt: serverTimestamp(),
@@ -123,12 +142,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(false);
           }
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+          console.warn("Firestore profile snapshot warning:", error);
+          if (isConfiguredAdmin) {
+            setIsAdmin(true);
+          }
           setIsLoading(false);
         });
 
       } catch (err) {
         console.error("Auth profile initialization error:", err);
+        if (isConfiguredAdmin) {
+          setIsAdmin(true);
+        }
         setIsLoading(false);
       }
     });
@@ -196,6 +221,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const adminQuickLogin = async (pass: string) => {
+    if (!pass || pass.length < 6) {
+      throw new Error('Please enter a password with at least 6 characters.');
+    }
+    setIsLoading(true);
+    const adminEmail = APP_CONFIG.adminEmail;
+
+    try {
+      // First attempt to sign in with existing credentials
+      await signInWithEmailAndPassword(auth, adminEmail, pass);
+    } catch (err: any) {
+      const errCode = err?.code || '';
+      const errMsg = err?.message || '';
+
+      // If user does not exist yet or credentials not recognized, attempt initial account creation
+      if (
+        errCode === 'auth/user-not-found' || 
+        errCode === 'auth/invalid-credential' || 
+        errMsg.includes('user-not-found') || 
+        errMsg.includes('invalid-credential')
+      ) {
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, adminEmail, pass);
+          const initialAdminProfile: UserProfile = {
+            uid: cred.user.uid,
+            email: adminEmail,
+            username: 'maim',
+            displayName: 'Maim',
+            photoUrl: APP_CONFIG.adminPicUrl,
+            bio: APP_CONFIG.developerBio,
+            status: 'approved',
+            role: 'admin',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            lastActive: serverTimestamp(),
+            postCount: 0,
+            friendCount: 0,
+            likeCount: 0,
+            blockedUsers: []
+          };
+
+          await setDoc(doc(db, 'users', cred.user.uid), initialAdminProfile);
+          await setDoc(doc(db, 'admins', cred.user.uid), {
+            email: adminEmail,
+            role: 'superadmin',
+            addedAt: serverTimestamp()
+          });
+          setProfile(initialAdminProfile);
+          setIsAdmin(true);
+          return;
+        } catch (createErr: any) {
+          if (createErr?.code === 'auth/email-already-in-use') {
+            throw new Error('Incorrect password for admin account (' + adminEmail + '). Please enter the password you registered with, or click Reset Password.');
+          }
+          throw createErr;
+        }
+      }
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
@@ -216,19 +304,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await setDoc(doc(db, 'users', currentUser.uid), updates, { merge: true });
   };
 
-  const isApproved = profile?.status === 'approved' || isAdmin;
+  const isUserAdmin = Boolean(
+    (currentUser?.email && currentUser.email.toLowerCase().trim() === APP_CONFIG.adminEmail.toLowerCase().trim()) ||
+    profile?.role === 'admin' ||
+    isAdmin
+  );
+
+  const isUserApproved = Boolean(
+    isUserAdmin ||
+    profile?.status === 'approved'
+  );
 
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         profile,
-        isAdmin,
-        isApproved,
+        isAdmin: isUserAdmin,
+        isApproved: isUserApproved,
         isLoading,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
+        adminQuickLogin,
         logout,
         resetPassword,
         updateUserBio

@@ -42,8 +42,14 @@ export const RegisterPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await signUpWithEmail(email.trim(), password, cleanUsername, displayName.trim());
-      setRegisteredPending(true);
+      const cleanEmail = email.trim();
+      const isAdminTarget = cleanEmail.toLowerCase() === APP_CONFIG.adminEmail.toLowerCase();
+      await signUpWithEmail(cleanEmail, password, cleanUsername, displayName.trim());
+      if (isAdminTarget) {
+        navigate('/admin/dashboard');
+      } else {
+        setRegisteredPending(true);
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please check your information.');
     } finally {

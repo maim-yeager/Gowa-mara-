@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from '../../context/RouterContext';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/common/BrandLogo';
+import { APP_CONFIG } from '../../config/appConfig';
 import { 
   LayoutDashboard, 
   UserCheck, 
@@ -111,9 +112,24 @@ export const AdminLayout: React.FC<{ children: React.ReactNode; currentTab: stri
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">
-              Role: <span className="font-bold text-amber-400">Super Admin</span>
-            </span>
+            <div className="flex items-center gap-2.5">
+              <img
+                src={APP_CONFIG.adminPicUrl}
+                alt={APP_CONFIG.developerName}
+                className="w-8 h-8 rounded-full object-cover border border-amber-400/40 bg-slate-800"
+              />
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-white leading-tight">{APP_CONFIG.developerName}</p>
+                <p className="text-[10px] text-amber-300 font-mono leading-tight">{currentUser?.email || APP_CONFIG.adminEmail}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => logout().then(() => navigate('/login'))}
+              title="Sign Out"
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition-colors ml-1"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </header>
 

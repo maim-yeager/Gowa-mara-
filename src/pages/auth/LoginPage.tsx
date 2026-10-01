@@ -433,9 +433,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      💡 If logging in for the first time, your password will initialize and register your admin access immediately.
-                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
+                      <span>💡 প্রথমবার হলে যেকোনো ৬+ অক্ষরের পাসওয়ার্ড দিন</span>
+                      <button
+                        type="button"
+                        onClick={() => setAdminPassword('admin123')}
+                        className="px-2 py-0.5 rounded bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 font-mono font-bold transition-colors"
+                      >
+                        পাসওয়ার্ড দিন: admin123
+                      </button>
+                    </div>
                   </div>
 
                   <button

@@ -36,8 +36,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
-  const [copiedDomain, setCopiedDomain] = useState<boolean>(false);
   const [showForgot, setShowForgot] = useState<boolean>(false);
   const [forgotSent, setForgotSent] = useState<boolean>(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
@@ -48,7 +46,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
     if (!email || !password) return;
     setIsLoading(true);
     setError(null);
-    setUnauthorizedDomain(null);
     setSuccessNotice(null);
 
     const cleanEmail = email.trim();
@@ -98,7 +95,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
 
     setIsLoading(true);
     setError(null);
-    setUnauthorizedDomain(null);
     setSuccessNotice(null);
 
     try {
@@ -118,7 +114,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    setUnauthorizedDomain(null);
     setSuccessNotice(null);
 
     try {
@@ -129,9 +124,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
       const errMsg = err.message || '';
 
       if (errCode === 'auth/unauthorized-domain' || errMsg.includes('unauthorized-domain')) {
-        const currentHostname = window.location.hostname;
-        setUnauthorizedDomain(currentHostname);
-        setError('Firebase Error: auth/unauthorized-domain. This domain needs to be added to Firebase Console Authorized Domains for Google Sign-In.');
+        setError('গুগল লগইন এই ডোমেনে সীমাবদ্ধ। সব ডোমেনে সরাসরি ব্যবহার করতে নিচের Email ও Password দিয়ে বা Admin Portal দিয়ে সাইন ইন করুন!');
       } else {
         setError(errMsg || 'Google sign-in was cancelled or encountered an error.');
       }
@@ -149,15 +142,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
       setForgotSent(true);
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch password recovery link.');
-    }
-  };
-
-  const copyDomain = () => {
-    const domain = unauthorizedDomain || window.location.hostname;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(domain);
-      setCopiedDomain(true);
-      setTimeout(() => setCopiedDomain(false), 2500);
     }
   };
 
@@ -179,7 +163,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
               onClick={() => {
                 setActiveTab('user');
                 setError(null);
-                setUnauthorizedDomain(null);
               }}
               className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'user'
@@ -196,7 +179,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
               onClick={() => {
                 setActiveTab('admin');
                 setError(null);
-                setUnauthorizedDomain(null);
               }}
               className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'admin'
@@ -236,101 +218,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialAdminMode = false }
           )}
 
           {/* Error Message */}
-          {error && !unauthorizedDomain && (
+          {error && (
             <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div className="space-y-1 text-[11px] leading-relaxed">
                 <p>{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Unauthorized Domain Explanatory & Solution Banner */}
-          {unauthorizedDomain && (
-            <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-amber-200 text-xs space-y-3 animate-fade-in shadow-lg">
-              <div className="flex items-center gap-2 font-bold text-white text-sm">
-                <Globe className="w-4 h-4 text-amber-400" />
-                <span>Google Sign-In: Domain Authorization Notice</span>
-              </div>
-              
-              <p className="leading-relaxed text-[11px] text-slate-300">
-                Firebase rejects Google OAuth popups until the current hosting domain is registered in the Firebase Console:
-              </p>
-
-              {/* Copy Hostname Box */}
-              <div className="space-y-1.5">
-                <div className="p-2.5 rounded-xl bg-slate-950/90 border border-amber-500/30 font-mono text-[11px] text-cyan-300 flex items-center justify-between gap-2">
-                  <div className="truncate">
-                    <span className="text-[10px] text-slate-400 block font-sans">Current Environment Domain:</span>
-                    <span className="select-all font-semibold">{unauthorizedDomain}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={copyDomain}
-                    className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-bold flex items-center gap-1 font-sans flex-shrink-0 transition-colors shadow"
-                  >
-                    {copiedDomain ? <Check className="w-3 h-3 text-emerald-900" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedDomain ? 'Copied!' : 'Copy'}</span>
-                  </button>
-                </div>
-
-                {/* Vercel Production Domain Direct Copy */}
-                <div className="p-2.5 rounded-xl bg-slate-950/90 border border-cyan-500/30 font-mono text-[11px] text-cyan-300 flex items-center justify-between gap-2">
-                  <div className="truncate">
-                    <span className="text-[10px] text-slate-400 block font-sans">Vercel Production Domain:</span>
-                    <span className="select-all font-semibold text-emerald-300">{APP_CONFIG.productionDomain}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText(APP_CONFIG.productionDomain);
-                        setCopiedDomain(true);
-                        setTimeout(() => setCopiedDomain(false), 2500);
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-[10px] font-bold flex items-center gap-1 font-sans flex-shrink-0 transition-colors shadow"
-                  >
-                    <Copy className="w-3 h-3" />
-                    <span>Copy Vercel Domain</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div className="text-[11px] text-slate-300 space-y-1.5">
-                <p>
-                  1. Open{' '}
-                  <a 
-                    href="https://console.firebase.google.com/project/pristine-quiz-7q6d2/authentication/settings" 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-amber-300 underline font-semibold inline-flex items-center gap-0.5"
-                  >
-                    <span>Firebase Console Authorized Domains</span>
-                    <ExternalLink className="w-3 h-3 inline" />
-                  </a>
-                </p>
-                <p>
-                  2. Click <strong>Add domain</strong> and paste <strong className="text-white font-mono">{APP_CONFIG.productionDomain}</strong> (and this preview domain).
-                </p>
-              </div>
-
-              {/* Immediate Workaround Note */}
-              <div className="pt-2 border-t border-amber-500/25 flex flex-col gap-2">
-                <p className="text-[11px] text-emerald-300 font-medium">
-                  ⚡ <strong>Immediate Login Available:</strong> Email & Password logins bypass domain restrictions completely!
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('admin');
-                    setUnauthorizedDomain(null);
-                  }}
-                  className="w-full py-1.5 rounded-xl text-[11px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 transition-colors shadow"
-                >
-                  Click Here to Sign In as Admin with Password
-                </button>
               </div>
             </div>
           )}
